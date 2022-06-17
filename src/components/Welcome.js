@@ -1,39 +1,43 @@
 import { useEffect } from 'react';
 import React from 'react';
 import { useSubscriberContext } from '../context/subscriberContext'
-import http from '../http-common'
-import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
+import swal from 'sweetalert2'
 
 function Welcome()
 {
-  const { subscribers,setSubscribers } = useSubscriberContext();
-  const navigate = useNavigate();
-
+  const { subscribers,getAllSubscribers,deleteSubscriber,refreshSubscribers } = useSubscriberContext();
+  
   useEffect(() => {
-    http.get('subscribers').then(response => {
-    //  console.log(response)
-        setSubscribers(response.data.data);
-    }).catch(error => {
-       console.log(error);
-    });
+    getAllSubscribers();
   },[]);
-
-  const refreshSubscribers = () => {
-      http.get('subscribers').then(response => {
-      //  console.log(response)
-          setSubscribers(response.data.data);
-      }).catch(error => {
-         console.log(error);
-      });
-  }
-
+  
   const handleDelete = (event) => {
-    http.delete('subscribers/'+event.target.id).then(response => {
-        console.log(response);
-        refreshSubscribers();
-    }).catch(error => {
-        console.log(error);
+    swal.fire({
+      title: "Are you sure?",
+      text: "Once deleted, you will not be able to recover this record!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, delete it!'
     })
+    .then((willDelete) => {
+      if (willDelete.value) {
+        deleteSubscriber(event.target.id).then(response => {
+          swal.fire("Poof! record has been deleted!", {
+            icon: "success",
+          });
+          refreshSubscribers();
+        }).catch(error => {
+          console.log(error)
+        })
+      } else {
+        swal.fire("Your record is safe!");
+      }
+    });
+
+    
   }
 
   const sub_list = subscribers.map(subscriber => 
@@ -42,11 +46,15 @@ function Welcome()
       <td>{subscriber.name}</td>
       <td>{subscriber.email}</td>
       <td>{subscriber.state}</td>
-      <td><a id={subscriber.id} onClick={handleDelete}>Delete</a></td>
+      <td>
+        <a id={subscriber.id} onClick={handleDelete}>Delete</a>
+        <Link to={"subscriber/edit/"+subscriber.id}>Edit</Link>
+      </td>
     </tr>);
   return (
     <div className="container my-3">
        <h1>Subscribers List</h1>
+       <Link to="/subscriber/add" type='button' className='btn btn-success mb-3'>Add Subscriber</Link>
        <table className='table table-bordered'>
           <thead>
             <tr>
